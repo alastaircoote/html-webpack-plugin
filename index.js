@@ -45,6 +45,7 @@ HtmlWebpackPlugin.prototype.apply = function(compiler) {
         return self.getTemplateContent(compilation, templateParams)
           .then(function(htmlTemplateContent) {
             // Compile and add html to compilation
+
             return self.emitHtml(compilation, htmlTemplateContent, templateParams, outputFilename);
         });
       })
@@ -114,6 +115,7 @@ HtmlWebpackPlugin.prototype.getTemplateContent = function(compilation, templateP
  */
 HtmlWebpackPlugin.prototype.emitHtml = function(compilation, htmlTemplateContent, templateParams, outputFilename) {
   var html;
+  var outputDirectory = path.dirname(outputFilename)
   // blueimp-tmpl processing
   try {
     html = tmpl(htmlTemplateContent, templateParams);
@@ -123,7 +125,7 @@ HtmlWebpackPlugin.prototype.emitHtml = function(compilation, htmlTemplateContent
 
   // Inject link and script elements into an existing html file
   if (this.options.inject) {
-    html = this.injectAssetsIntoHtml(html, templateParams);
+    html = this.injectAssetsIntoHtml(html, templateParams, outputDirectory);
   }
 
   // Minify the html output
@@ -254,10 +256,9 @@ HtmlWebpackPlugin.prototype.htmlWebpackPluginAssets = function(compilation, webp
 /**
  * Injects the assets into the given html string
  */
-HtmlWebpackPlugin.prototype.injectAssetsIntoHtml = function(html, templateParams) {
+HtmlWebpackPlugin.prototype.injectAssetsIntoHtml = function(html, templateParams, outputDirectory) {
   var assets = templateParams.htmlWebpackPlugin.files;
   var chunks = Object.keys(assets.chunks);
-
   // Gather all css and script files
   var styles = [];
   var scripts = [];
@@ -267,7 +268,7 @@ HtmlWebpackPlugin.prototype.injectAssetsIntoHtml = function(html, templateParams
   });
   // Turn script files into script tags
   scripts = scripts.map(function(scriptPath) {
-    return '<script src="' + scriptPath + '"></script>';
+    return '<script src="' + path.relative(outputDirectory,scriptPath) + '"></script>';
   });
   // Turn css files into link tags
   styles = styles.map(function(stylePath) {
